@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surat Jalan Barang - PLN</title>
+
+<link rel="icon" type="image/x-icon" href="pln.ico">
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+/* ================================
+   RESET & DASAR
+================================ */
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+}
+
+@page{ size:A4; margin:0; }
+
+body{
+    background:#dcdcdc;
+    font-family:Arial, sans-serif;
+    font-size:12pt;
+    color:#000;
+    line-height:1.4;
+    padding:20px 0 40px;
+    overflow-x:auto;
+}
+
+/* ================================
+   TOOLBAR (hanya di layar)
+================================ */
+.toolbar{
+    width:210mm;
+    margin:0 auto 12px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+}
+.toolbar .spacer{ flex:1; }
+
+button{
+    font-family:Arial, sans-serif;
+    font-size:11pt;
+    padding:7px 16px;
+    border:1px solid #1f6f8b;
+    background:#fff;
+    color:#1f6f8b;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+}
+button:hover{ background:#e8f4f8; }
+button.primary{ background:#1f6f8b; color:#fff; }
+button.primary:hover{ background:#175a72; }
+button.danger{ border-color:#b3261e; color:#b3261e; }
+button.danger:hover{ background:#fdecea; }
+
+.btn-kecil{
+    padding:0 7px;
+    height:24px;
+    font-size:11pt;
+    line-height:1;
+}
+
+/* ================================
+   KERTAS A4
+================================ */
+.paper{
+    width:210mm;
+    min-height:297mm;
+    background:#fff;
+    margin:0 auto;
+    padding:10mm 15mm 15mm 15mm;
+    box-shadow:0 2px 12px rgba(0,0,0,.25);
+}
+
+/* ================================
+   HEADER
+================================ */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:5px;
+}
+.logo-title{ display:flex; align-items:center; gap:10px; }
+.logo-title img{ width:55px; height:55px; }
+.title-text{ font-size:12pt; line-height:1.3; }
+
+.keterangan{
+    height:55px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+.tabel-ket{ width:auto; border-collapse:collapse; font-size:12pt; }
+.tabel-ket td{ border:none; padding:0 3px; line-height:1.1; }
+.kolom-kiri{ width:65px; }
+.kolon{ width:12px; text-align:center; font-weight:bold; }
+.garis-kecil{ border-bottom:1px solid #000; }
+
+/* ================================
+   JUDUL
+================================ */
+.judul-wrap{ text-align:center; }
+.judul{
+    font-size:16pt;
+    font-weight:bold;
+    margin-top:8px;
+    border-bottom:1px solid #000;
+    display:inline-block;
+    line-height:1;
+}
+
+/* ================================
+   TABEL INFO ATAS
+================================ */
+.tabel-info{
+    border-collapse:collapse;
+    margin-top:15px;
+    width:auto;
+}
+.tabel-info td{ border:none; padding:4px 0; font-size:12pt; vertical-align:middle; }
+.tabel-info td:nth-child(1){ width:220px; white-space:nowrap; }
+.tabel-info td:nth-child(2){ width:15px; text-align:center; font-weight:bold; }
+.tabel-info td:nth-child(3){ padding-left:8px; }
+.tabel-info input,
+.tabel-info select{ width:auto; min-width:260px; margin:0; }
+
+/* ================================
+   INPUT & SELECT
+================================ */
+input, select{
+    font-family:Arial, sans-serif;
+    font-size:12pt;
+    height:24px;
+    padding:2px 5px;
+    border:none;
+    width:100%;
+    background:transparent;
+}
+input:focus, select:focus{
+    outline:2px solid #9fd0e0;
+    outline-offset:0;
+    background:#f4fbfd;
+}
+.select-flat{ background:transparent; }
+
+.manual-wrap{ display:none; align-items:center; gap:6px; }
+.manual-wrap.aktif{ display:inline-flex; }
+.manual-wrap input{ border-bottom:1px dashed #888; }
+
+/* ================================
+   TEKS BARANG & TABEL BARANG
+================================ */
+.teks-barang{ margin:10px 0 5px 0; }
+
+table{ width:100%; border-collapse:collapse; font-size:12pt; }
+
+#barangTable th,
+#barangTable td{
+    border:1px solid #000;
+    padding:4px;
+    font-size:11pt;
+}
+th{ font-weight:normal; }
+#barangTable td:nth-child(1){ text-align:center; position:relative; }
+#barangTable td:nth-child(4){ text-align:center; }
+#barangTable td:nth-child(5){ text-transform:uppercase; }
+#barangTable{ page-break-inside:auto; }
+#barangTable tr{ page-break-inside:avoid; }
+
+.btn-del{
+    position:absolute;
+    left:-30px;
+    top:50%;
+    transform:translateY(-50%);
+    border-color:#b3261e;
+    color:#b3261e;
+    padding:0 7px;
+    height:24px;
+}
+.btn-del:hover{ background:#fdecea; }
+
+.baris-tambah{ margin-top:6px; }
+
+/* ================================
+   TANGGAL
+================================ */
+.tanggal-row{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    margin:15px 0;
+    gap:6px;
+}
+#tanggalInput{ font-size:12pt; width:150px; }
+#tanggalCetak{ display:none; font-size:12pt; cursor:pointer; }
+#tanggalCetak:hover{ background:#f4fbfd; }
+
+/* ================================
+   TANDA TANGAN
+================================ */
+.ttd-container{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-top:20px;
+    page-break-inside:avoid;
+}
+.ttd-container > div{ width:32%; text-align:center; }
+.ttd-title{ margin-bottom:5px; }
+
+.ttd-box{
+    min-height:140px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+}
+.ttd-img{
+    width:150px;
+    height:80px;
+    object-fit:contain;
+    margin-bottom:2px;
+}
+.ttd-img{ visibility:hidden; }
+.ttd-img.tampil{ visibility:visible; }
+
+.ttd-line{ border-top:1px solid #000; width:160px; margin-top:4px; }
+.ttd-label{
+    font-size:12pt;
+    margin:2px 0;
+    line-height:1.1;
+    width:100%;
+    min-height:36px;              /* tinggi 2 baris: garis TTD selalu sejajar walau nama 1 atau 2 baris */
+    display:flex;
+    align-items:flex-end;         /* nama menempel tepat di atas garis */
+    justify-content:center;
+    text-align:center;
+}
+.ttd-nip{ font-size:14px; margin-top:2px; min-height:18px; }
+
+/* ---- menu TTD (satu menu "Isi TTD" yang sama di ketiga kolom) ---- */
+.ttd-kontrol{ margin-top:8px; text-align:center; width:100%; }
+.ttd-kontrol input{
+    font-size:13px;
+    width:auto;
+    max-width:190px;
+    border:1px solid #ccc;
+    border-radius:4px;
+    text-align:center;
+}
+
+.menu-ttd{ position:relative; display:inline-block; }
+.baris-menu{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:4px;
+}
+.menu-ttd .menu-btn{
+    width:190px;
+    padding:5px 10px;
+    font-size:13px;
+    font-weight:bold;
+    color:#1f6f8b;
+    background:#fff;
+    border:1px solid #1f6f8b;
+    border-radius:4px;
+}
+.menu-ttd .menu-list{
+    display:none;
+    position:absolute;
+    top:100%;
+    left:50%;
+    transform:translateX(-50%);
+    margin-top:3px;
+    min-width:220px;
+    max-height:260px;
+    overflow-y:auto;
+    background:#fff;
+    border:1px solid #1f6f8b;
+    border-radius:6px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+    text-align:left;
+    z-index:50;
+}
+.menu-ttd .menu-list.buka{ display:block; }
+.menu-grup{
+    font-size:11px;
+    font-weight:bold;
+    color:#1f6f8b;
+    background:#eef6f9;
+    padding:4px 10px;
+}
+.menu-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    border:none;
+    border-radius:0;
+    background:#fff;
+    color:#000;
+    font-size:13px;
+    padding:6px 10px;
+}
+.menu-item:hover{ background:#e8f4f8; }
+.menu-item.aktif{ background:#d4ecf5; font-weight:bold; }
+
+/* baris TTD otomatis: nama + tombol hapus kecil di pinggir kanan */
+.menu-baris{ display:flex; align-items:stretch; background:#fff; }
+.menu-baris.aktif{ background:#d4ecf5; }
+.menu-baris .menu-item{ flex:1; width:auto; background:transparent; }
+.menu-baris .menu-item:hover{ background:#e8f4f8; }
+.menu-baris .menu-x{
+    flex:none;
+    width:30px;
+    padding:0;
+    border:none;
+    border-radius:0;
+    background:transparent;
+    color:#b3261e;
+    font-size:12px;
+}
+.menu-baris .menu-x:hover{ background:#fdecea; }
+.menu-kosong{ font-size:12px; color:#666; padding:8px 10px; }
+.menu-kembali{ color:#1f6f8b; font-weight:bold; border-bottom:1px solid #d6e6ec; }
+
+.ttd-kontrol .panel-baru{ display:none; margin-top:6px; }
+.ttd-kontrol .panel-baru input[type=text]{ display:block; margin:4px auto 0; }
+.ttd-kontrol input[type=file]{
+    width:100%;
+    height:auto;
+    font-size:11px;
+    border:none;
+    text-align:left;
+    margin-top:4px;
+}
+.ttd-kontrol .btn-kecil{ height:26px; font-size:10pt; margin-top:6px; }
+.ttd-status{ font-size:11px; color:#1b7a3a; min-height:14px; margin-top:4px; }
+
+/* ================================
+   TABEL BAWAH
+================================ */
+.tabel-bawah{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    page-break-inside:avoid;
+}
+.tabel-bawah td{ border:none; padding:3px 4px; font-weight:400; }
+.tabel-bawah td:nth-child(1){ width:100px; }
+.tabel-bawah td:nth-child(2){ width:15px; text-align:center; }
+
+/* ================================
+   MODE PDF / CETAK
+================================ */
+.hide-before-print{ display:none !important; }
+
+.pdf-mode{
+    box-shadow:none !important;
+    margin:0 !important;
+    min-height:0 !important;      /* jangan paksa tinggi 297mm saat jadi PDF */
+    overflow:hidden;
+}
+
+/* ================================
+   NOTIFIKASI MODERN (dialog + toast)
+================================ */
+.dlg-overlay{
+    position:fixed; inset:0;
+    display:none; align-items:center; justify-content:center;
+    padding:16px;
+    background:rgba(12,30,40,.45);
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    z-index:1000;
+}
+.dlg-overlay.tampil{ display:flex; animation:dlgFade .15s ease; }
+.dlg{
+    width:100%; max-width:380px;
+    padding:28px 24px 22px;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35);
+    text-align:center;
+    animation:dlgPop .22s cubic-bezier(.2,.9,.3,1.25);
+}
+.dlg-ikon{
+    width:60px; height:60px; margin:0 auto 14px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    font-size:28px; font-weight:bold;
+}
+.dlg-ikon.bahaya{ background:#fdecea; color:#b3261e; }
+.dlg-ikon.info{ background:#e3f2f7; color:#1f6f8b; }
+.dlg h3{ font-size:18px; color:#14313d; margin-bottom:6px; }
+.dlg p{ font-size:13.5px; line-height:1.55; color:#5a6770; margin-bottom:22px; }
+.dlg-aksi{ display:flex; gap:10px; }
+.dlg-aksi button{
+    flex:1; padding:11px 0;
+    font-size:13.5px; font-weight:bold;
+    border-radius:10px;
+}
+.dlg-batal{ background:#fff; color:#44525a; border:1px solid #cfd8dc; }
+.dlg-batal:hover{ background:#f1f5f7; }
+.dlg-ya.bahaya{ background:#b3261e; border-color:#b3261e; color:#fff; }
+.dlg-ya.bahaya:hover{ background:#8f1d17; }
+.dlg-ya.info{ background:#1f6f8b; border-color:#1f6f8b; color:#fff; }
+.dlg-ya.info:hover{ background:#175a72; }
+
+.toast-wadah{
+    position:fixed; top:18px; right:18px;
+    display:flex; flex-direction:column; gap:10px;
+    z-index:1100;
+    pointer-events:none;
+}
+.toast{
+    display:flex; align-items:center; gap:10px;
+    min-width:240px; max-width:340px;
+    padding:12px 16px;
+    background:#fff;
+    border-left:5px solid #1f6f8b;
+    border-radius:12px;
+    box-shadow:0 10px 28px rgba(0,0,0,.22);
+    font-size:13.5px; color:#1d2b33;
+    animation:toastMasuk .25s ease;
+    pointer-events:auto;
+}
+.toast.keluar{ animation:toastKeluar .25s ease forwards; }
+.toast-ikon{
+    flex:none; width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    font-size:13px; font-weight:bold; color:#fff;
+    background:#1f6f8b;
+}
+.toast.sukses{ border-left-color:#1b7a3a; }
+.toast.sukses .toast-ikon{ background:#1b7a3a; }
+.toast.error{ border-left-color:#b3261e; }
+.toast.error .toast-ikon{ background:#b3261e; }
+.toast.peringatan{ border-left-color:#e09b00; }
+.toast.peringatan .toast-ikon{ background:#e09b00; }
+
+@keyframes dlgFade{ from{opacity:0} to{opacity:1} }
+@keyframes dlgPop{ from{opacity:0; transform:scale(.88) translateY(10px)} to{opacity:1; transform:none} }
+@keyframes toastMasuk{ from{opacity:0; transform:translateX(30px)} to{opacity:1; transform:none} }
+@keyframes toastKeluar{ to{opacity:0; transform:translateX(30px)} }
+
+@media (max-width:600px){
+    .toast-wadah{ left:12px; right:12px; top:12px; }
+    .toast{ max-width:none; }
+}
+
+/* ================================
+   PAPAN TANDA TANGAN (manual)
+================================ */
+.pad-dlg{
+    width:100%; max-width:640px;
+    padding:22px 22px 18px;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35);
+    animation:dlgPop .22s cubic-bezier(.2,.9,.3,1.25);
+}
+.pad-judul{ font-size:18px; font-weight:bold; color:#14313d; }
+.pad-sub{ font-size:13px; color:#5a6770; margin:2px 0 12px; }
+.pad-area{
+    position:relative;
+    height:300px;
+    border:2px dashed #b9d3dc;
+    border-radius:12px;
+    background:#fbfdfe;
+    overflow:hidden;
+}
+.pad-canvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    touch-action:none;
+    cursor:crosshair;
+}
+.pad-garis{
+    position:absolute; left:6%; right:6%; bottom:28%;
+    border-top:1px solid #c5d6dd;
+    pointer-events:none;
+}
+.pad-hint{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#b0c4cc; font-size:20px; letter-spacing:.5px;
+    pointer-events:none;
+}
+.pad-tools{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:10px; flex-wrap:wrap;
+    margin:12px 0 16px;
+}
+.pad-pena, .pad-kecil-grup{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:#5a6770; }
+.pena-btn, .pad-kecil{
+    padding:5px 12px;
+    font-size:12.5px;
+    border-radius:8px;
+    border:1px solid #cfd8dc;
+    color:#44525a;
+    background:#fff;
+}
+.pena-btn:hover, .pad-kecil:hover{ background:#f1f5f7; }
+.pena-btn.aktif{ background:#1f6f8b; border-color:#1f6f8b; color:#fff; }
+.pad-kecil.merah{ color:#b3261e; border-color:#f0c4c0; }
+.pad-kecil.merah:hover{ background:#fdecea; }
+@media (max-width:600px){
+    .pad-area{ height:240px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div class="toolbar no-print">
+    <button class="primary" onclick="downloadPDF()">⬇ Download PDF</button>
+    <button onclick="window.print()">🖨 Cetak</button>
+    <span class="spacer"></span>
+    <button class="danger" onclick="resetForm()">Reset Form</button>
+</div>
+
+<div class="paper" id="printArea">
+
+<div class="header">
+    <div class="logo-title">
+        <img src="pln.ico" alt="PLN">
+        <div class="title-text">
+            <b>PT PLN (Persero) UID Jawa Barat</b><br>
+            <b>UP3 PURWAKARTA</b><br>
+            <b>ULP PURWAKARTA KOTA</b>
+        </div>
+    </div>
+
+    <div class="keterangan">
+        <table class="tabel-ket">
+            <tr><td class="kolom-kiri">Putih</td><td class="kolon">:</td><td>Penerima Barang</td></tr>
+            <tr><td class="kolom-kiri">Putih</td><td class="kolon">:</td><td>Satpam</td></tr>
+            <tr><td class="kolom-kiri">Putih</td><td class="kolon">:</td><td>Arsip</td></tr>
+        </table>
+        <div class="garis-kecil"></div>
+    </div>
+</div>
+
+<div class="judul-wrap">
+    <div class="judul">SURAT JALAN BARANG</div>
+</div>
+
+<table class="tabel-info">
+<tr>
+    <td>Diberikan Kepada</td>
+    <td>:</td>
+    <td>
+        <select id="selectPenerima" class="select-flat" onchange="onPilihField(this)">
+            <option value="" disabled selected>Pilih</option>
+            <option value="manual">Input Manual</option>
+            <option>PT MITRA PUTRA ENG</option>
+            <option>PT GLOBAL PRIMA LISTRINDO</option>
+            <option>PT ADAM SUKSES MANDIRI</option>
+            <option>PT SINAR MUSTIKA SAKTI</option>
+        </select>
+        <span class="manual-wrap">
+            <input type="text" id="inputPenerima" placeholder="Ketik penerima..." oninput="updateTTDPenerima()">
+            <button type="button" class="btn-kecil no-print" onclick="kembaliDropdown(this)" title="Kembali ke pilihan">↩</button>
+        </span>
+    </td>
+</tr>
+
+<tr>
+    <td>Berdasarkan Kode 6/7 No</td>
+    <td>:</td>
+    <td><input></td>
+</tr>
+
+<tr>
+    <td>Untuk Pekerjaan Proyek</td>
+    <td>:</td>
+    <td>
+        <select id="selectProyek" class="select-flat" onchange="onPilihField(this)">
+            <option value="" disabled selected>Pilih</option>
+            <option value="manual">Input Manual</option>
+            <option>GANTI KWH METER</option>
+            <option>GANTI PEMBATAS ARUS</option>
+            <option>PASANG BARU</option>
+            <option>PERUBAHAN DAYA</option>
+        </select>
+        <span class="manual-wrap">
+            <input type="text" id="inputProyek" placeholder="Ketik pekerjaan...">
+            <button type="button" class="btn-kecil no-print" onclick="kembaliDropdown(this)" title="Kembali ke pilihan">↩</button>
+        </span>
+    </td>
+</tr>
+
+<tr>
+    <td>Lokasi</td>
+    <td>:</td>
+    <td>
+        <select id="selectLokasi" class="select-flat" onchange="onPilihField(this)">
+            <option value="" disabled selected>Pilih</option>
+            <option value="manual">Input Manual</option>
+            <option>ULP PURWAKARTA KOTA</option>
+        </select>
+        <span class="manual-wrap">
+            <input type="text" id="inputLokasi" placeholder="Ketik lokasi...">
+            <button type="button" class="btn-kecil no-print" onclick="kembaliDropdown(this)" title="Kembali ke pilihan">↩</button>
+        </span>
+    </td>
+</tr>
+</table>
+
+<div class="teks-barang">
+    Barang-barang milik PT PLN (Persero), sebagai berikut :
+</div>
+
+<table id="barangTable">
+<thead>
+<tr>
+    <th rowspan="2" width="35">No</th>
+    <th rowspan="2">Nama Barang</th>
+    <th rowspan="2" width="50">Satuan</th>
+    <th colspan="2" width="140">Jumlah</th>
+</tr>
+<tr>
+    <th width="55">Angka</th>
+    <th width="125">Huruf</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div class="baris-tambah no-print">
+    <button type="button" onclick="tambahBaris()">＋ Tambah Barang</button>
+</div>
+
+<!-- TANGGAL -->
+<div class="tanggal-row">
+    <span id="tanggalCetak" title="Klik untuk mengubah tanggal"></span>
+    <input type="date" id="tanggalInput">
+</div>
+
+<!-- TANDA TANGAN (3 kolom dibuat otomatis oleh script: buatBlokTTD) -->
+<div class="ttd-container" id="ttdContainer"></div>
+
+<table class="tabel-bawah">
+<tr><td>Kendaraan</td><td>:</td><td><input></td></tr>
+<tr><td>No. Pol</td><td>:</td><td><input></td></tr>
+<tr><td>Pengemudi</td><td>:</td><td><input></td></tr>
+</table>
+
+</div> <!-- tutup .paper -->
+
+<!-- NOTIFIKASI MODERN -->
+<div class="dlg-overlay no-print" id="dlgOverlay">
+    <div class="dlg" role="dialog" aria-modal="true">
+        <div class="dlg-ikon" id="dlgIkon"></div>
+        <h3 id="dlgJudul"></h3>
+        <p id="dlgPesan"></p>
+        <div class="dlg-aksi">
+            <button type="button" class="dlg-batal" id="dlgBatal">Batal</button>
+            <button type="button" class="dlg-ya" id="dlgYa">Ya</button>
+        </div>
+    </div>
+</div>
+<div class="toast-wadah no-print" id="toastWadah"></div>
+
+<!-- PAPAN TANDA TANGAN -->
+<div class="dlg-overlay no-print" id="padOverlay">
+    <div class="pad-dlg" role="dialog" aria-modal="true">
+        <div class="pad-judul">Papan Tanda Tangan</div>
+        <div class="pad-sub" id="padSub"></div>
+        <div class="pad-area">
+            <canvas id="padCanvas" class="pad-canvas"></canvas>
+            <div class="pad-garis"></div>
+            <div class="pad-hint" id="padHint">Tanda tangan di sini</div>
+        </div>
+        <div class="pad-tools">
+            <div class="pad-pena">
+                <span>Pena:</span>
+                <button type="button" class="pena-btn" data-pena="halus" onclick="setPena('halus')">Halus</button>
+                <button type="button" class="pena-btn aktif" data-pena="sedang" onclick="setPena('sedang')">Sedang</button>
+                <button type="button" class="pena-btn" data-pena="tebal" onclick="setPena('tebal')">Tebal</button>
+            </div>
+            <div class="pad-kecil-grup">
+                <button type="button" class="pad-kecil" onclick="urungkanPad()">↶ Urungkan</button>
+                <button type="button" class="pad-kecil merah" onclick="hapusPad()">Hapus</button>
+            </div>
+        </div>
+        <div class="dlg-aksi">
+            <button type="button" class="dlg-batal" onclick="tutupPapanTTD()">Batal</button>
+            <button type="button" class="dlg-ya info" onclick="gunakanPapanTTD()">Gunakan TTD</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================
+   DATA
+========================= */
+const masterBarang = [
+    {name:"MTR kWH E 3P 230/400V 5-80A 4W", satuan:"BH"},
+    {name:"MTR kWH E-PR 1P 230V 5-60A 2W", satuan:"BH"},
+    {name:"MTR kWH E-PR 3P 230/400V 5-80A 4W", satuan:"BH"},
+    {name:"MTR kWH E 1P 230V 5-60A 2W", satuan:"BH"},
+    {name:"MCB 230/400V 1P 2A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 4A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 6A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 10A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 16A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 20A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 25A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 35A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 1P 50A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 3P 10A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 3P 16A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 3P 20A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 3P 25A 50Hz", satuan:"BH"},
+    {name:"MCB 230/400V 3P 35A 50Hz", satuan:"BH"},
+    {name:"MTR ACC SEGEL PLASTIC", satuan:"BH"},
+    {name:"MTR ACC SEGEL PUTAR PLASTIC", satuan:"BH"},
+    {name:"COND ACC JOINT SLEEVE AL 70mm2", satuan:"BH"},
+    {name:"CABLE PWR NFA2X 2X10mm2 0.6/1kV OH", satuan:"M"},
+    {name:"CABLE PWR NFA2X 4X16mm2 0.6/1kV OH", satuan:"M"},
+    {name:"CABLE PWR ACC DEAD END ASSY FIXED 70mm", satuan:"SET"},
+    {name:"CABLE PWR ACC WEDGE CLAMP 2x(6-16)mm", satuan:"BH"},
+    {name:"CABLE PWR ACC STRAIN HOOK EKOR BABI 1.5", satuan:"BH"}
+];
+
+// DAFTAR TTD BAWAAN = semua file TTD di folder proyek.
+// Semuanya jadi pilihan di menu "Isi TTD" pada ketiga kolom tanda tangan.
+// Ada file TTD baru di folder? Tambahkan satu baris di sini.
+const DAFTAR_TTD = [
+    {id:"mitra",    nama:"PT MITRA PUTRA ENG",        src:"yangmenerima4.jpeg"},
+    {id:"global",   nama:"PT GLOBAL PRIMA LISTRINDO", src:"pt_global.png"},
+    {id:"adam",     nama:"PT ADAM SUKSES MANDIRI",    src:"adam.png"},
+    {id:"sinar",    nama:"PT SINAR MUSTIKA SAKTI",    src:"ttd_sinar_mustika.png"},
+    {id:"security", nama:"Security",                  src:"security.jpeg"},
+    {id:"kepala",   nama:"Gilang Dila Putra",         src:"kepalagudang.png", nip:"92162551ZY"}
+];
+
+// Pengaturan 3 kolom tanda tangan.
+// modeAwal  : mode saat halaman dibuka (auto / manual / upload) - dibuat sama untuk ketiganya
+// defaultId : TTD yang terpilih otomatis saat halaman dibuka (kolom penerima mengikuti "Diberikan Kepada")
+const TTD_BLOK = {
+    penerima: {judul:"Yang Menerima", modeAwal:"auto"},
+    security: {judul:"Security",      modeAwal:"auto",   defaultId:"security"},
+    kepala:   {judul:"Kepala Gudang", modeAwal:"auto",   defaultId:"kepala", pakaiNip:true}
+};
+
+/* =========================
+   INPUT MANUAL (dropdown <-> ketik)
+========================= */
+function onPilihField(select){
+    if(select.value === "manual"){
+        const wrap  = select.parentElement.querySelector(".manual-wrap");
+        const input = wrap.querySelector("input");
+        select.style.display = "none";
+        wrap.classList.add("aktif");
+        input.value = "";
+        input.focus();
+    }
+    if(select.id === "selectPenerima") updateTTDPenerima();
+}
+
+function kembaliDropdown(btn){
+    const wrap   = btn.closest(".manual-wrap");
+    const select = wrap.parentElement.querySelector("select");
+    wrap.classList.remove("aktif");
+    wrap.querySelector("input").value = "";
+    select.style.display = "";
+    select.selectedIndex = 0;
+    if(select.id === "selectPenerima") updateTTDPenerima();
+    else if(select.closest("#barangTable")) pilihBarang(select);
+}
+
+/* =========================
+   TABEL BARANG
+========================= */
+function tambahBaris(){
+    const tbody = document.querySelector("#barangTable tbody");
+    const row = tbody.insertRow();
+
+    row.innerHTML = `
+<td>
+    <span class="no-text"></span>
+    <button type="button" class="btn-del no-print" onclick="hapusBaris(this)" title="Hapus baris">✕</button>
+</td>
+<td>
+    <select class="select-flat" onchange="pilihBarang(this)">
+        <option value="">Pilih Barang</option>
+        <option value="manual">Input Manual</option>
+        ${masterBarang.map(b => `<option data-satuan="${b.satuan}">${b.name}</option>`).join("")}
+    </select>
+    <span class="manual-wrap">
+        <input type="text" placeholder="Ketik nama barang...">
+        <button type="button" class="btn-kecil no-print" onclick="kembaliDropdown(this)" title="Kembali ke pilihan">↩</button>
+    </span>
+</td>
+<td><input></td>
+<td><input type="number" min="0" step="1" oninput="isiHuruf(this)"></td>
+<td><input readonly></td>`;
+
+    nomorUlang();
+    updateTTDKepala();
+}
+
+function hapusBaris(btn){
+    const tbody = document.querySelector("#barangTable tbody");
+    btn.closest("tr").remove();
+    if(tbody.rows.length === 0) tambahBaris();   // minimal 1 baris
+    nomorUlang();
+    updateTTDKepala();
+}
+
+function nomorUlang(){
+    document.querySelectorAll("#barangTable tbody tr").forEach((tr, i) => {
+        tr.querySelector(".no-text").textContent = i + 1;
+    });
+}
+
+function pilihBarang(select){
+    const td          = select.parentElement;
+    const wrap        = td.querySelector(".manual-wrap");
+    const inputManual = wrap.querySelector("input");
+    const satuanInput = td.nextElementSibling.querySelector("input");
+
+    if(select.value === "manual"){
+        select.style.display = "none";
+        wrap.classList.add("aktif");
+        inputManual.value = "";
+        inputManual.focus();
+
+        satuanInput.removeAttribute("readonly");
+        satuanInput.value = "";
+    }else{
+        wrap.classList.remove("aktif");
+        select.style.display = "";
+
+        const opt = select.options[select.selectedIndex];
+        satuanInput.value = (opt && opt.dataset.satuan) || "";
+        satuanInput.setAttribute("readonly", true);
+    }
+    updateTTDKepala();
+}
+
+function getNamaBarang(row){
+    const select = row.cells[1].querySelector("select");
+    const manual = row.cells[1].querySelector("input[type='text']");
+    return select.style.display === "none" ? manual.value.trim() : select.value;
+}
+
+/* =========================
+   TERBILANG (sampai triliun)
+========================= */
+const SATUAN = ["","Satu","Dua","Tiga","Empat","Lima","Enam","Tujuh","Delapan","Sembilan","Sepuluh","Sebelas"];
+
+function terbilangKecil(n){            // 0 - 999
+    if(n < 12)   return SATUAN[n];
+    if(n < 20)   return SATUAN[n - 10] + " Belas";
+    if(n < 100)  return (SATUAN[Math.floor(n / 10)] + " Puluh " + SATUAN[n % 10]).trim();
+    if(n < 200)  return ("Seratus " + terbilangKecil(n - 100)).trim();
+    return (SATUAN[Math.floor(n / 100)] + " Ratus " + terbilangKecil(n % 100)).trim();
+}
+
+function terbilang(n){
+    n = Math.floor(n);
+    if(n === 0) return "Nol";
+
+    const skala = [[1e12,"Triliun"],[1e9,"Miliar"],[1e6,"Juta"],[1e3,"Ribu"]];
+    let hasil = "";
+
+    for(const [nilai, nama] of skala){
+        if(n >= nilai){
+            const q = Math.floor(n / nilai);
+            n = n % nilai;
+            hasil += (nama === "Ribu" && q === 1)
+                ? "Seribu "
+                : terbilang(q) + " " + nama + " ";
+        }
+    }
+    return (hasil + terbilangKecil(n)).trim();
+}
+
+function isiHuruf(el){
+    const huruf = el.parentElement.nextElementSibling.firstElementChild;
+    const angka = parseInt(el.value, 10);
+    huruf.value = angka ? terbilang(angka).toUpperCase() : "";
+}
+
+/* =========================
+   TANDA TANGAN (3 kolom, menu "Isi TTD" sama)
+   Isi Otomatis = pilih dari semua TTD di DAFTAR_TTD + TTD yang pernah disimpan
+   Manual       = ketik nama + coret TTD
+   Upload       = upload file TTD baru
+========================= */
+const KEY_TTD = "sj_ttd_v3";
+const ttdState = {};                 // id kolom -> {el, upload, manualData, timer, ...}
+
+function getNamaPenerima(){
+    const select = document.getElementById("selectPenerima");
+    const input  = document.getElementById("inputPenerima");
+    if(select.style.display === "none") return input.value.trim();
+    return select.value && select.value !== "manual" ? select.value : "";
+}
+
+function esc(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---- penyimpanan TTD yang disimpan (di browser) ---- */
+function muatTTD(){
+    try{ return JSON.parse(localStorage.getItem(KEY_TTD) || "[]"); }catch(e){ return []; }
+}
+function simpanKeStorage(arr){
+    try{ localStorage.setItem(KEY_TTD, JSON.stringify(arr)); return true; }catch(e){ return false; }
+}
+function migrasiTTDLama(){            // pindahkan simpanan dari versi sebelumnya
+    try{
+        const arr = muatTTD();
+        let ubah = false;
+        const tambah = (nama, nip, data) => {
+            nama = (nama || "").trim() || "TTD";
+            if(!data || arr.some(t => t.nama.toLowerCase() === nama.toLowerCase())) return;
+            arr.push({id:"s" + Date.now().toString(36) + arr.length, nama, nip:nip || "", data});
+            ubah = true;
+        };
+        const v1 = JSON.parse(localStorage.getItem("sj_ttd_tersimpan") || "null");
+        if(v1) v1.forEach(t => tambah(t.nama, "", t.data));
+        const v2 = JSON.parse(localStorage.getItem("sj_ttd_v2") || "null");
+        if(v2) v2.forEach(t => tambah(t.nama || (t.key === "security" ? "Security" : ""), t.nip, t.data));
+        if(ubah) simpanKeStorage(arr);
+        localStorage.removeItem("sj_ttd_tersimpan");
+        localStorage.removeItem("sj_ttd_v2");
+    }catch(e){}
+}
+
+/* ---- daftar semua TTD (bawaan + tersimpan) ---- */
+const KEY_SEMBUNYI = "sj_ttd_sembunyi";     // id TTD bawaan yang sudah "dihapus" dari menu
+function muatSembunyi(){
+    try{ return JSON.parse(localStorage.getItem(KEY_SEMBUNYI) || "[]"); }catch(e){ return []; }
+}
+function simpanSembunyi(arr){
+    try{ localStorage.setItem(KEY_SEMBUNYI, JSON.stringify(arr)); return true; }catch(e){ return false; }
+}
+
+function semuaTTD(){
+    const sembunyi = muatSembunyi();
+    const bawaan = DAFTAR_TTD.filter(t => !sembunyi.includes(t.id)).map(t => ({id:t.id, nama:t.nama, nip:t.nip || "", src:t.src, custom:false}));
+    const simpan = muatTTD().map(t => ({id:t.id, nama:t.nama, nip:t.nip || "", src:t.data, custom:true}));
+    return bawaan.concat(simpan);
+}
+function cariItem(id){
+    return id ? (semuaTTD().find(t => t.id === id) || null) : null;
+}
+function matchPenerima(){             // TTD yang namanya sama dengan "Diberikan Kepada"
+    const nama = getNamaPenerima().toLowerCase();
+    if(!nama) return "";
+    const cocok = semuaTTD().filter(t => t.nama.toLowerCase() === nama);
+    return cocok.length ? cocok[cocok.length - 1].id : "";   // yang tersimpan (terbaru) menang
+}
+function fallbackId(id){
+    return id === "penerima" ? matchPenerima() : (TTD_BLOK[id].defaultId || "");
+}
+
+/* ---- menu "Isi TTD" (dropdown buatan sendiri, tulisan tombol selalu "Isi TTD") ---- */
+function renderMenuTTD(id){
+    const st = ttdState[id];
+    if(!st) return;
+    const cur = st.el.pilih.value;
+    const tingkat = st.menuTingkat || "utama";          // "utama" = 3 pilihan, "otomatis" = daftar TTD
+    const khususCur = cur === "__manual" || cur === "__upload";
+
+    let html = "";
+
+    if(tingkat === "utama"){
+        // TINGKAT 1: tiga pilihan saja
+        const utama = (teks, aksi, aktif) =>
+            `<button type="button" class="menu-item${aktif ? " aktif" : ""}" onclick="${aksi}">${teks}</button>`;
+        html =
+            utama("Isi Otomatis ▸", `menuKeOtomatis('${id}')`, cur !== "" && !khususCur) +
+            utama("Isi Manual", `pilihMenuTTD('${id}', '__manual')`, cur === "__manual") +
+            utama("Tambah File TTD Baru", `pilihMenuTTD('${id}', '__upload')`, cur === "__upload");
+    }else{
+        // TINGKAT 2: daftar TTD otomatis (tiap nama punya tombol ✕ hapus kecil)
+        const semua = semuaTTD();
+        const itemOto = t =>
+            `<div class="menu-baris${t.id === cur ? " aktif" : ""}">` +
+                `<button type="button" class="menu-item${t.id === cur ? " aktif" : ""}" data-val="${esc(t.id)}" onclick="pilihMenuTTD('${id}', this.dataset.val)">${esc(t.nama)}</button>` +
+                `<button type="button" class="menu-x" title="Hapus TTD ini" data-val="${esc(t.id)}" onclick="hapusTTDTersimpan('${id}', this.dataset.val)">✕</button>` +
+            `</div>`;
+
+        html =
+            `<button type="button" class="menu-item menu-kembali" onclick="menuKeUtama('${id}')">◂ Kembali</button>` +
+            (semua.length ? semua.map(itemOto).join("") : `<div class="menu-kosong">Belum ada TTD otomatis</div>`);
+    }
+    st.el.menuList.innerHTML = html;
+}
+
+function menuKeOtomatis(id){ ttdState[id].menuTingkat = "otomatis"; renderMenuTTD(id); }
+function menuKeUtama(id){    ttdState[id].menuTingkat = "utama";    renderMenuTTD(id); }
+
+function bukaMenuTTD(id){
+    const list = ttdState[id].el.menuList;
+    const bukaSekarang = list.classList.contains("buka");
+    tutupSemuaMenuTTD();
+    if(!bukaSekarang){
+        ttdState[id].menuTingkat = "utama";             // selalu mulai dari 3 pilihan
+        renderMenuTTD(id);
+        list.classList.add("buka");
+    }
+}
+function tutupSemuaMenuTTD(){
+    document.querySelectorAll(".menu-list.buka").forEach(l => l.classList.remove("buka"));
+}
+function pilihMenuTTD(id, val){
+    ttdState[id].el.pilih.value = val;
+    tutupSemuaMenuTTD();
+    onPilihTTD(id);
+}
+document.addEventListener("click", e => {
+    // composedPath dipakai karena isi menu bisa digambar ulang saat diklik
+    const didalamMenu = e.composedPath().some(n => n.classList && n.classList.contains("menu-ttd"));
+    if(!didalamMenu) tutupSemuaMenuTTD();
+});
+
+function isiDropdown(id, nilai){
+    const ok = nilai === "__manual" || nilai === "__upload" || semuaTTD().some(t => t.id === nilai);
+    ttdState[id].el.pilih.value = ok ? nilai : "";
+    renderMenuTTD(id);
+}
+function isiSemuaDropdown(){          // daftar berubah -> segarkan semua kolom
+    Object.keys(ttdState).forEach(id => {
+        const cur = ttdState[id].el.pilih.value;
+        const khusus = cur === "__manual" || cur === "__upload";
+        const ada = semuaTTD().some(t => t.id === cur);
+        isiDropdown(id, khusus || ada || cur === "" ? cur : fallbackId(id));
+    });
+}
+
+/* ---- bangun satu kolom TTD ---- */
+function buatBlokTTD(id){
+    const b = TTD_BLOK[id];
+    const col = document.createElement("div");
+    col.id = "ttd-" + id;
+
+    col.innerHTML = `
+<div class="ttd-title">${b.judul}</div>
+<div class="ttd-box">
+    <img class="ttd-img" alt="">
+    <div class="ttd-label"></div>
+    <div class="ttd-line"></div>
+    <div class="ttd-nip"></div>
+
+    <div class="ttd-kontrol no-print">
+        <div class="baris-menu">
+            <div class="menu-ttd">
+                <button type="button" class="menu-btn" onclick="bukaMenuTTD('${id}')">Isi TTD ▾</button>
+                <div class="menu-list menu-list-isi"></div>
+            </div>
+        </div>
+        <input type="hidden" class="pilih" value="">
+        <input type="hidden" class="mode" value="auto">
+
+        <div class="panel-baru">
+            <input type="text" class="in-nama" placeholder="Ketik nama${id === 'penerima' ? ' / PT' : ''}" oninput="updateTTD('${id}')">
+            ${b.pakaiNip ? `<input type="text" class="in-nip" placeholder="NIP (opsional)" oninput="updateTTD('${id}')">` : ''}
+            <div class="baris-file" style="display:none;">
+                <input type="file" class="in-file" accept="image/*" onchange="onUploadTTD('${id}', this)">
+            </div>
+            <button type="button" class="btn-kecil btn-papan" onclick="bukaPapanTTD('${id}')">✍ Buka Papan TTD</button>
+            <button type="button" class="btn-kecil btn-simpan" onclick="simpanTTDBaru('${id}')">Simpan ke Daftar</button>
+        </div>
+
+        <div class="ttd-status"></div>
+    </div>
+</div>`;
+
+    document.getElementById("ttdContainer").appendChild(col);
+
+    const q = s => col.querySelector(s);
+    const el = {
+        mode: q(".mode"), pilih: q(".pilih"),
+        menuList: q(".menu-list-isi"),
+        img: q(".ttd-img"),
+        label: q(".ttd-label"), nipOut: q(".ttd-nip"),
+        nama: q(".in-nama"), nip: q(".in-nip"),
+        panelBaru: q(".panel-baru"), barisFile: q(".baris-file"),
+        btnPapan: q(".btn-papan"), btnSimpan: q(".btn-simpan"), status: q(".ttd-status")
+    };
+    ttdState[id] = {el, upload:"", manualData:"", timer:null, autoManual:false, namaOtomatis:"", pilihSendiri:false};
+    isiDropdown(id, fallbackId(id));
+    el.mode.value = b.modeAwal;
+    gantiModeTTD(id);
+}
+
+/* ---- apa yang ditampilkan untuk mode saat ini ---- */
+function ambilTTD(id){
+    const st = ttdState[id], el = st.el;
+    const mode = el.mode.value;
+
+    if(mode === "manual" || mode === "upload"){
+        return {
+            src:  mode === "upload" ? st.upload : st.manualData,
+            nama: el.nama.value.trim() || (id === "penerima" ? getNamaPenerima() : ""),
+            nip:  el.nip ? el.nip.value.trim() : ""
+        };
+    }
+
+    // Otomatis: sesuai pilihan di menu
+    const item = cariItem(el.pilih.value);
+    if(item) return {src:item.src, nama:item.nama, nip:item.nip};
+    return {src:"", nama: id === "penerima" ? getNamaPenerima() : "", nip:""};
+}
+
+function updateTTD(id){
+    const st = ttdState[id];
+    if(!st) return;
+    const el = st.el, mode = el.mode.value;
+    const d = ambilTTD(id);
+
+    // TTD Kepala Gudang (otomatis) baru muncul setelah tanggal + barang terisi
+    const sembunyi = id === "kepala" && mode === "auto" && !st.pilihSendiri && !cekValidasiKepala();
+
+    if(d.src && !sembunyi){
+        el.img.src = d.src;
+        el.img.classList.add("tampil");
+    }else{
+        el.img.removeAttribute("src");
+        el.img.classList.remove("tampil");
+    }
+
+    el.label.textContent = d.nama;
+    el.label.style.visibility = sembunyi ? "hidden" : "visible";
+
+    if(el.nipOut){
+        el.nipOut.textContent = d.nip ? "NIP : " + d.nip : "";
+        el.nipOut.style.visibility = sembunyi ? "hidden" : "visible";
+    }
+}
+
+function onPilihTTD(id){              // dipanggil saat salah satu isi menu "Isi TTD" dipilih
+    const el = ttdState[id].el, v = el.pilih.value;
+    el.mode.value = v === "__manual" ? "manual" : v === "__upload" ? "upload" : "auto";
+    ttdState[id].pilihSendiri = true;     // dipilih langsung oleh pengguna -> langsung tampil
+    gantiModeTTD(id, true);
+}
+
+function gantiModeTTD(id, dariUser){
+    if(dariUser) ttdState[id].autoManual = false;   // pilihan sendiri tidak diubah otomatis lagi
+    const el = ttdState[id].el, mode = el.mode.value;
+    if(mode === "manual") el.pilih.value = "__manual";   // samakan pilihan menu
+    if(mode === "upload") el.pilih.value = "__upload";
+    el.panelBaru.style.display = mode === "auto" ? "none" : "block";
+    el.barisFile.style.display = mode === "upload" ? "block" : "none";
+    el.btnPapan.style.display  = mode === "manual" ? "" : "none";
+    el.btnSimpan.style.display = mode === "manual" ? "" : "none";   // upload tersimpan otomatis
+    renderMenuTTD(id);
+    updateTTD(id);
+    if(mode === "manual" && dariUser) bukaPapanTTD(id);   // pilih Isi Manual -> papan langsung terbuka
+}
+
+/* ---- PAPAN TANDA TANGAN (besar, halus, bisa urungkan) ---- */
+const PENA = {
+    halus:  {min:0.6, max:1.9},
+    sedang: {min:1.0, max:3.0},
+    tebal:  {min:1.6, max:4.6}
+};
+let padBesar  = null;       // satu papan dipakai bersama oleh ketiga kolom
+let padUntuk  = null;       // id kolom yang sedang diisi
+let penaAktif = "sedang";
+
+function padEsc(e){ if(e.key === "Escape") tutupPapanTTD(); }
+
+function perbaruiHintPad(){
+    document.getElementById("padHint").style.display = padBesar && !padBesar.isEmpty() ? "none" : "";
+}
+
+function siapkanCanvasPad(){
+    const c = document.getElementById("padCanvas");
+    const rasio = Math.max(window.devicePixelRatio || 1, 2);   // resolusi tinggi supaya goresan tajam
+    c.width  = c.offsetWidth  * rasio;
+    c.height = c.offsetHeight * rasio;
+    const ctx = c.getContext("2d");
+    ctx.scale(rasio, rasio);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    padBesar.clear();
+    perbaruiHintPad();
+}
+
+function buatPadBesar(){
+    if(padBesar) return;
+    padBesar = new SignaturePad(document.getElementById("padCanvas"), {
+        backgroundColor: "rgba(0,0,0,0)",
+        penColor: "#0b1f33",
+        minWidth: PENA[penaAktif].min,
+        maxWidth: PENA[penaAktif].max,
+        throttle: 16,                  // ~60 titik per detik: halus dan tidak berat
+        minDistance: 2,                // buang titik yang terlalu rapat supaya garis tidak bergetar
+        velocityFilterWeight: 0.7      // tebal-tipis mengikuti kecepatan tangan
+    });
+    padBesar.addEventListener("beginStroke", () => {
+        document.getElementById("padHint").style.display = "none";
+    });
+}
+
+function setPena(nama){
+    penaAktif = nama;
+    if(padBesar){
+        padBesar.minWidth = PENA[nama].min;
+        padBesar.maxWidth = PENA[nama].max;
+    }
+    document.querySelectorAll(".pena-btn").forEach(b => b.classList.toggle("aktif", b.dataset.pena === nama));
+}
+
+function urungkanPad(){                // hapus goresan terakhir saja
+    if(!padBesar) return;
+    const data = padBesar.toData();
+    if(data.length){
+        data.pop();
+        padBesar.fromData(data);
+    }
+    perbaruiHintPad();
+}
+function hapusPad(){
+    if(!padBesar) return;
+    padBesar.clear();
+    perbaruiHintPad();
+}
+
+function bukaPapanTTD(id){
+    padUntuk = id;
+    document.getElementById("padSub").textContent = "Untuk kolom: " + TTD_BLOK[id].judul;
+    document.getElementById("padOverlay").classList.add("tampil");
+    buatPadBesar();
+    siapkanCanvasPad();
+    document.addEventListener("keydown", padEsc);
+}
+function tutupPapanTTD(){
+    document.getElementById("padOverlay").classList.remove("tampil");
+    document.removeEventListener("keydown", padEsc);
+    padUntuk = null;
+}
+
+// potong area kosong di sekeliling coretan supaya TTD pas dan rapi di kotaknya
+function potongTTD(canvas){
+    const w = canvas.width, h = canvas.height;
+    const px = canvas.getContext("2d").getImageData(0, 0, w, h).data;
+    let x1 = w, y1 = h, x2 = -1, y2 = -1;
+    for(let y = 0; y < h; y++){
+        for(let x = 0; x < w; x++){
+            if(px[(y * w + x) * 4 + 3] > 8){
+                if(x < x1) x1 = x;
+                if(x > x2) x2 = x;
+                if(y < y1) y1 = y;
+                if(y > y2) y2 = y;
+            }
+        }
+    }
+    if(x2 < 0) return "";
+    const m  = 14;
+    x1 = Math.max(0, x1 - m);     y1 = Math.max(0, y1 - m);
+    x2 = Math.min(w - 1, x2 + m); y2 = Math.min(h - 1, y2 + m);
+    const lw = x2 - x1 + 1, lh = y2 - y1 + 1;
+    const skala = Math.min(1, 900 / lw);
+    const out = document.createElement("canvas");
+    out.width  = Math.max(1, Math.round(lw * skala));
+    out.height = Math.max(1, Math.round(lh * skala));
+    const ctx = out.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(canvas, x1, y1, lw, lh, 0, 0, out.width, out.height);
+    return out.toDataURL("image/png");
+}
+
+function gunakanPapanTTD(){
+    if(!padBesar || padBesar.isEmpty()){
+        notif("Silakan tanda tangan dulu pada papan.", "peringatan");
+        return;
+    }
+    const id = padUntuk;
+    if(!id) return;
+    ttdState[id].manualData = potongTTD(document.getElementById("padCanvas"));
+    tutupPapanTTD();
+    updateTTD(id);
+}
+
+/* ---- upload: kecilkan ukuran supaya hemat penyimpanan ---- */
+function onUploadTTD(id, input){
+    const file = input.files && input.files[0];
+    if(!file) return;
+    if(!file.type.startsWith("image/")){
+        notif("File harus berupa gambar (PNG / JPG).", "error");
+        input.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        const im = new Image();
+        im.onload = () => {
+            const skala = Math.min(1, 600 / Math.max(im.width, im.height));
+            const c = document.createElement("canvas");
+            c.width  = Math.round(im.width  * skala);
+            c.height = Math.round(im.height * skala);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            ttdState[id].upload = file.type === "image/png"
+                ? c.toDataURL("image/png")
+                : c.toDataURL("image/jpeg", 0.92);
+
+            // langsung simpan ke daftar: nama diambil dari kolom nama (jika diisi) atau dari nama file
+            const el = ttdState[id].el;
+            if(!el.nama.value.trim()){
+                el.nama.value = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim() || "TTD";
+            }
+            input.value = "";
+            updateTTD(id);
+            simpanTTDBaru(id);
+        };
+        im.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+/* ---- simpan TTD manual / upload ke daftar (muncul di Isi Otomatis semua kolom) ---- */
+function pesanTTD(id, teks){
+    if(!teks) return;
+    const sukses = /^✓|dihapus|dipulihkan/.test(teks);
+    notif(teks.replace(/^✓\s*/, ""), sukses ? "sukses" : "info", 3800);
+}
+
+function simpanTTDBaru(id){
+    const st = ttdState[id], el = st.el;
+    const mode = el.mode.value;
+    const nama = el.nama.value.trim();
+    const nip  = el.nip ? el.nip.value.trim() : "";
+
+    if(!nama){ notif("Isi nama TTD terlebih dahulu.", "peringatan"); return; }
+
+    let data;
+    if(mode === "manual"){
+        if(!st.manualData){ notif("Silakan isi TTD manual terlebih dahulu.", "peringatan"); return; }
+        data = st.manualData;
+    }else{
+        if(!st.upload){ notif("Pilih file TTD terlebih dahulu.", "peringatan"); return; }
+        data = st.upload;
+    }
+
+    const arr = muatTTD();
+    const ada = arr.find(t => t.nama.toLowerCase() === nama.toLowerCase());   // nama sama = diperbarui
+    let itemId;
+    if(ada){ ada.nama = nama; ada.nip = nip; ada.data = data; itemId = ada.id; }
+    else{
+        itemId = "s" + Date.now().toString(36);
+        arr.push({id:itemId, nama, nip, data});
+    }
+
+    if(!simpanKeStorage(arr)){
+        notif("Gagal menyimpan: penyimpanan browser penuh atau diblokir. TTD tetap dipakai di form ini.", "error", 5500);
+        return;
+    }
+
+    isiSemuaDropdown();                      // semua kolom ikut mendapat pilihan baru
+    el.pilih.value = itemId;                 // kolom ini langsung memakainya
+    el.mode.value = "auto";
+    gantiModeTTD(id);
+    pesanTTD(id, ada ? "✓ TTD diperbarui di daftar" : "✓ TTD disimpan ke daftar");
+}
+
+async function hapusTTDTersimpan(id, itemId){
+    const item = cariItem(itemId);
+    if(!item) return;
+    tutupSemuaMenuTTD();
+    const yakin = await konfirmasi({
+        judul: "Hapus TTD?",
+        pesan: `TTD "${item.nama}" akan dihapus dari menu Isi Otomatis.`,
+        ya: "Hapus", batal: "Batal", jenis: "bahaya", ikon: "🗑"
+    });
+    if(!yakin) return;
+
+    if(item.custom){
+        simpanKeStorage(muatTTD().filter(t => t.id !== item.id));      // TTD simpanan: dihapus
+    }else{
+        const sembunyi = muatSembunyi();                               // TTD bawaan: disembunyikan
+        if(!sembunyi.includes(item.id)) sembunyi.push(item.id);
+        simpanSembunyi(sembunyi);
+    }
+    isiSemuaDropdown();
+    Object.keys(ttdState).forEach(k => updateTTD(k));
+    pesanTTD(id, "TTD dihapus dari menu");
+}
+
+/* ---- pintasan yang dipakai bagian lain ---- */
+function updateTTDPenerima(){         // dipanggil saat "Diberikan Kepada" berubah
+    const st = ttdState.penerima;
+    if(!st) return;
+    const el = st.el;
+    const nama = getNamaPenerima();
+    const isiManual = document.getElementById("selectPenerima").style.display === "none";
+    const cocok = matchPenerima();
+
+    if(el.mode.value === "auto") el.pilih.value = cocok;   // pilih TTD yang namanya sama (jika ada)
+    if(isiManual && nama && !cocok){
+        // Penerima diketik manual & belum punya TTD -> otomatis ke mode Manual (coret)
+        if(el.mode.value === "auto"){
+            st.autoManual = true;
+            el.mode.value = "manual";
+            gantiModeTTD("penerima");
+            st.manualData = "";              // mulai dari kosong untuk penerima ini
+            pesanTTD("penerima", "Belum ada TTD untuk penerima ini - silakan isi TTD manual");
+        }
+        // nama di menu ikut terisi dari "Diberikan Kepada" (selama belum diubah sendiri)
+        if(st.autoManual && (el.nama.value === "" || el.nama.value === st.namaOtomatis)){
+            el.nama.value = nama;
+            st.namaOtomatis = nama;
+        }
+    }else if(st.autoManual){
+        // sudah ada TTD-nya / bukan input manual lagi -> kembali ke Otomatis
+        st.autoManual = false;
+        if(el.nama.value === st.namaOtomatis) el.nama.value = "";
+        st.namaOtomatis = "";
+        el.mode.value = "auto";
+        el.pilih.value = cocok;
+        gantiModeTTD("penerima");
+        pesanTTD("penerima", "");
+    }
+    updateTTD("penerima");
+}
+function updateTTDKepala(){   updateTTD("kepala"); }
+
+function cekValidasiKepala(){
+    const tanggal = document.getElementById("tanggalInput").value;
+    const rows = document.querySelectorAll("#barangTable tbody tr");
+    let validBarang = false;
+
+    rows.forEach(row => {
+        const nama   = getNamaBarang(row);
+        const jumlah = row.cells[3].querySelector("input").value;
+        if(nama && jumlah) validBarang = true;
+    });
+    return !!tanggal && validBarang;
+}
+
+document.querySelector("#barangTable").addEventListener("input", updateTTDKepala);
+
+/* =========================
+   TANGGAL
+========================= */
+const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+function formatTanggalIndo(value){
+    const [y, m, d] = value.split("-").map(Number);
+    return `Purwakarta, ${d} ${BULAN[m - 1]} ${y}`;
+}
+
+function tampilkanTanggal(){
+    const input = document.getElementById("tanggalInput");
+    const teks  = document.getElementById("tanggalCetak");
+    if(!input.value){
+        teks.style.display = "none";
+        input.style.display = "";
+        return;
+    }
+    teks.innerText = formatTanggalIndo(input.value);
+    teks.style.display = "inline";
+    input.style.display = "none";
+    updateTTDKepala();
+}
+
+document.getElementById("tanggalInput").addEventListener("change", tampilkanTanggal);
+
+// klik teks tanggal untuk mengubah lagi
+document.getElementById("tanggalCetak").addEventListener("click", function(){
+    this.style.display = "none";
+    const input = document.getElementById("tanggalInput");
+    input.style.display = "";
+    input.focus();
+    if(input.showPicker){ try{ input.showPicker(); }catch(e){} }
+});
+
+function isiTanggalHariIni(){
+    const n = new Date();
+    const pad = x => String(x).padStart(2, "0");
+    document.getElementById("tanggalInput").value =
+        `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`;
+    tampilkanTanggal();
+}
+
+/* =========================
+   INPUT ANGKA: blok "-" dan "e"
+========================= */
+document.addEventListener("keydown", function(e){
+    if(e.target.type === "number" && (e.key === "-" || e.key === "e" || e.key === "+")){
+        e.preventDefault();
+    }
+});
+
+/* =========================
+   NOTIFIKASI MODERN
+   konfirmasi() -> dialog (hasilnya true/false), notif() -> toast kecil di pojok kanan atas
+========================= */
+function konfirmasi(opsi){
+    const o = Object.assign({judul:"Konfirmasi", pesan:"", ya:"Ya", batal:"Batal", jenis:"info", ikon:""}, opsi);
+    return new Promise(resolve => {
+        const ov = document.getElementById("dlgOverlay");
+        const btnYa = document.getElementById("dlgYa");
+        const btnBatal = document.getElementById("dlgBatal");
+
+        const ikon = document.getElementById("dlgIkon");
+        ikon.className = "dlg-ikon " + o.jenis;
+        ikon.textContent = o.ikon || (o.jenis === "bahaya" ? "!" : "?");
+        document.getElementById("dlgJudul").textContent = o.judul;
+        document.getElementById("dlgPesan").textContent = o.pesan;
+        btnYa.textContent = o.ya;
+        btnYa.className = "dlg-ya " + o.jenis;
+        btnBatal.textContent = o.batal;
+
+        const onKey = e => { if(e.key === "Escape") tutup(false); };
+        const tutup = hasil => {
+            ov.classList.remove("tampil");
+            document.removeEventListener("keydown", onKey);
+            resolve(hasil);
+        };
+        btnYa.onclick    = () => tutup(true);
+        btnBatal.onclick = () => tutup(false);
+        ov.onclick       = e => { if(e.target === ov) tutup(false); };
+        document.addEventListener("keydown", onKey);
+
+        ov.classList.add("tampil");
+        btnYa.focus();
+    });
+}
+
+function notif(pesan, jenis, durasi){
+    jenis = jenis || "info";
+    const ikon = {sukses:"✓", error:"✕", peringatan:"!", info:"i"}[jenis] || "i";
+    const t = document.createElement("div");
+    t.className = "toast " + jenis;
+    t.innerHTML = `<span class="toast-ikon">${ikon}</span><span class="toast-teks"></span>`;
+    t.querySelector(".toast-teks").textContent = pesan;
+    document.getElementById("toastWadah").appendChild(t);
+
+    const hilang = () => {
+        t.classList.add("keluar");
+        setTimeout(() => t.remove(), 260);
+    };
+    t.addEventListener("click", hilang);
+    setTimeout(hilang, durasi || 3200);
+}
+
+/* =========================
+   DOWNLOAD PDF & RESET
+========================= */
+function downloadPDF(){
+    const element = document.getElementById("printArea");
+
+    document.querySelectorAll(".no-print").forEach(el => el.classList.add("hide-before-print"));
+    element.classList.add("pdf-mode");
+
+    // Jika isi muat dalam 1 halaman, kunci tinggi sedikit di bawah 297mm
+    // supaya tidak ada halaman kedua yang kosong.
+    // Jika isi memang panjang (banyak barang), biarkan otomatis ke halaman berikutnya.
+    const TINGGI_A4_PX = 297 * 96 / 25.4;          // ± 1122 px
+    if(element.scrollHeight <= TINGGI_A4_PX - 4){
+        element.style.height = "296mm";
+    }
+
+    const n   = new Date();
+    const pad = x => String(x).padStart(2, "0");
+    const namaFile = `Surat_Jalan_PLN_${pad(n.getDate())}-${pad(n.getMonth() + 1)}-${n.getFullYear()}_${pad(n.getHours())}-${pad(n.getMinutes())}.pdf`;
+
+    const opt = {
+        margin: 0,
+        filename: namaFile,
+        image: {type: "jpeg", quality: 1},
+        html2canvas: {scale: 2, scrollY: 0, scrollX: 0},
+        jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
+        pagebreak: {mode: ["css"], avoid: ["tr", ".ttd-container", ".tabel-bawah"]}
+    };
+
+    const pulihkan = () => {
+        document.querySelectorAll(".no-print").forEach(el => el.classList.remove("hide-before-print"));
+        element.classList.remove("pdf-mode");
+        element.style.height = "";
+    };
+
+    html2pdf().set(opt).from(element).save().then(pulihkan).catch(pulihkan);
+}
+
+async function resetForm(){
+    const yakin = await konfirmasi({
+        judul: "Reset Form?",
+        pesan: "Seluruh isian form akan dikosongkan dan tidak bisa dikembalikan.",
+        ya: "Ya, Reset", batal: "Batal", jenis: "bahaya", ikon: "↺"
+    });
+    if(yakin) location.reload();
+}
+
+/* =========================
+   INISIALISASI
+========================= */
+migrasiTTDLama();
+Object.keys(TTD_BLOK).forEach(buatBlokTTD);   // penerima, security, kepala
+tambahBaris();
+isiTanggalHariIni();
+updateTTDPenerima();
+</script>
+
+</body>
+</html>

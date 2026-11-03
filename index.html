@@ -373,6 +373,18 @@ th{ font-weight:normal; }
     min-height:0 !important;      /* jangan paksa tinggi 297mm saat jadi PDF */
     overflow:hidden;
 }
+.pdf-mode select{ -webkit-appearance:none; appearance:none; background-image:none; }
+.pdf-mode input,
+.pdf-mode select{ outline:none !important; background:transparent !important; }
+.pdf-mode .manual-wrap input{ border-bottom:none; }
+
+@media print{
+    body{ background:#fff; padding:0; }
+    .paper{ margin:0 !important; box-shadow:none; }
+    .no-print{ display:none !important; }
+    select{ -webkit-appearance:none; appearance:none; }
+    .manual-wrap input{ border-bottom:none; }
+}
 
 /* ================================
    NOTIFIKASI MODERN (dialog + toast)
